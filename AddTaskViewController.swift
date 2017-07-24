@@ -21,8 +21,6 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
     var selectedDate = Date()
     
     
-    
-    
 
     
     override func viewDidLoad() {
@@ -36,9 +34,28 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
         PriorityPicker.inputView = pickerView
         let datePicker = UIDatePicker(frame: CGRect.zero)
         datePicker.datePickerMode = .date
-        datePicker.minimumDate = Date()
         datePicker.addTarget(self, action: #selector(self.onDatePickerValueChanged), for: .valueChanged)
+        //let components = Calendar.dateComponents([.year, .month, .day, .hour], from: Date)
+
+
         deadlinePicker.inputView = datePicker
+        deadlinePicker.text = String(describing: Date())
+        let firstDate = datePicker.date.toString(dateFormat: "MM-dd-yyyy")
+
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MM-dd-yyyy"
+        let date = dateFormatter.date(from:firstDate)!
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
+        datePicker.minimumDate = calendar.startOfDay(for: calendar.date(from: components)!)
+        
+        datePicker.date = calendar.date(from: components)!
+        print(datePicker.date)
+        deadlinePicker.text = datePicker.date.toString(dateFormat: "MM-dd-yyyy")
+
+
+        
         let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: "dismissKeyboard")
         textview.delegate = self;
         
@@ -78,7 +95,9 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
         let date = dateFormatter.date(from:isoDate!)!
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
-        selectedDate = calendar.date(from:components)!
+        selectedDate = calendar.startOfDay(for: calendar.date(from: components)!)
+        
+        print(selectedDate)
         self.view.endEditing(true)
         
     }
@@ -128,36 +147,63 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
                 print("Cancel button tapped")
             } else if identifier == "save" {
                 print("Save button tapped")
+                let time = timePicker.text!
+                print("checking input")
+                if (time != "" && (textview.text != "" && textview.text != "Enter Text Here" && textview.text != "Placeholder")){
+                    print("nil")
+                    let task = Task()
+                    
+                    task.title = taskTitle.text!
+                    task.endDate = selectedDate
+                    task.priority = PriorityPicker.text ?? ""
+                    task.timeNeeded = Int(timePicker.text!)!
+                    task.description = textview.text
+                    print(task.timeNeeded)
+                    let weeklyCalendarViewController = segue.destination as! WeeklyCalendarViewController
+                    weeklyCalendarViewController.tasks.append(task)
+                    
+                }
+                else{
+                    let alertController = UIAlertController(title: "no time selected", message: "please select a time", preferredStyle: UIAlertControllerStyle.alert)
+                    alertController.addAction(UIAlertAction(title: "dismiss", style: UIAlertActionStyle.default, handler: nil))
+                    self.present(alertController, animated: true, completion: nil)
+                    print("true")
+                    
                 
-                let task = Task()
-                task.title = taskTitle.text!
-                task.endDate = selectedDate
-                task.priority = PriorityPicker.text ?? ""
-                let weeklyCalendarViewController = segue.destination as! WeeklyCalendarViewController
-                weeklyCalendarViewController.tasks.append(task)
+                }
+                
+                
+
+                
                 
                 //                for _ in 0...7{
                 
+                
             }
         }
+        
     }
-    @IBAction func checkInput(_ sender: Any) {
-        let time = timePicker.text!
-        print("checking input")
-        if time == "" {
-            print("nil")
-        }
-        else{
-            let alertController = UIAlertController(title: "no time selected", message: "please select a time", preferredStyle: UIAlertControllerStyle.alert)
-            alertController.addAction(UIAlertAction(title: "dismiss", style: UIAlertActionStyle.default, handler: nil))
-            self.present(alertController, animated: true, completion: nil)
-            print("true")
-            return
+    
+    @IBAction func checkInput(_ sender: UIBarButtonItem) {
+        print("true")
+//        let time = timePicker.text!
+//        print("checking input")
+//        if time == "" {
+//            print("nil")
+//        }
+//        else{
+//            let alertController = UIAlertController(title: "no time selected", message: "please select a time", preferredStyle: UIAlertControllerStyle.alert)
+//            alertController.addAction(UIAlertAction(title: "dismiss", style: UIAlertActionStyle.default, handler: nil))
+//            self.present(alertController, animated: true, completion: nil)
+//            print("true")
+//            return
+//            
+
             
         }
-    
-    }
+
 }
+
 
 
 

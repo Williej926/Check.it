@@ -10,6 +10,7 @@ import Foundation
 class Task {
     var title = ""
     var priority = ""
+    var description = ""
     var timeNeeded: Int = 0
     var endDate: Date?
     //var modificationTime = Date()

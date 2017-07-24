@@ -21,13 +21,13 @@ class Day {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let myString = formatter.string(from: day)
         let yourDate = formatter.date(from: myString)
-        formatter.dateFormat = "dd-M-EEE-y"
+        formatter.dateFormat = "dd-M-EEEE-y"
         let str = formatter.string(from: yourDate!)
         let dateArray = str.components(separatedBy: "-")
         return dateArray[2]
     }
-    
-    func ifDateFalliable (startDate: Date, endDate: Date) -> Bool {
+                         
+    func ifDateFeasible (startDate: Date, endDate: Date) -> Bool {
 //        let end = date?.addingTimeInterval(24)
         let end = endDate + 86400
         let start = startDate - 86400
