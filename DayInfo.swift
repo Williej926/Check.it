@@ -14,20 +14,31 @@ protocol DayInfoViewControllerDelegate {
     func didDeleteTask(task: Task)
 }
 
+
 class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewDataSource{
     var tasks = [Task]();
+    var newTasks = [Task]();
+
     var delegate: DayInfoViewControllerDelegate?
+    
+
 
 
     @IBOutlet weak var tableview: UITableView!
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        newTasks.sort(by:{$0.priority > $1.priority })
+
         let cell = tableView.dequeueReusableCell(withIdentifier: "task", for: indexPath) as! TaskCell
         if(Int(indexPath.row) < tasks.count){
-            cell.taskName.text = tasks[indexPath.row].title
-            cell.button.tag = indexPath.row
-            cell.button.addTarget(self, action: Selector("showPopup"), for: UIControlEvents.touchUpOutside)
+            cell.taskName.text = newTasks[indexPath.row].title
+            cell.dayLabel.text = "Deadline: \(newTasks[indexPath.row].endDate!.toString(dateFormat: "MM-dd-yyyy"))"
+            
+            
 
         }
+        print(newTasks)
+
+        
         
         return cell
     }
@@ -53,10 +64,17 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
         self.tableview.dataSource = self
         //Crashlytics.sharedInstance().crash()
         //navigationItem.setHidesBackButton(true, animated: true)
+        
+        newTasks = tasks
+        
+
 
         
 
         
+    }
+    override func viewDidAppear(_ animated: Bool) {
+
     }
 
     @IBAction func showPopup(_ sender: AnyObject) {
@@ -67,11 +85,10 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
         
 
         let popOverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "popup") as! PopUpViewController
-        popOverVC.taskTitle = task.title
-        popOverVC.taskDescription = task.description
+        popOverVC.taskTitle = task.title!
+        popOverVC.taskDescription = task.taskDescription!
         popOverVC.taskDeadline = String(describing: task.endDate!)
         
-        print("TaskTitle: \(popOverVC.taskTitle)")
         
         self.addChildViewController(popOverVC)
         popOverVC.view.frame = self.view.frame
@@ -84,15 +101,53 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
-        delegate?.didDeleteTask(task: tasks[indexPath.row])
-
+        delegate?.didDeleteTask(task: newTasks[indexPath.row])
+        
         if editingStyle == .delete {
-            tasks.remove(at: indexPath.row)
+//            CoreDataHelper.delete(task: tasks[indexPath.row])
+//            for newTaskIndex in 0..<newTasks.count{
+//                for taskIndex in 0..<tasks.count{
+//                    if(newTasks[newTaskIndex] == tasks[taskIndex]){
+//                        CoreDataHelper.delete(task: tasks[taskIndex])
+//                        tasks.remove(at: taskIndex)
+//
+//                        
+//                    }
+//                }
+//            }
+////            tasks.remove(at: indexPath.row)
+            for taskIndex in 0..<tasks.count{
+                if newTasks[indexPath.row] == tasks[taskIndex] {
+                    CoreDataHelper.delete(task: tasks[taskIndex])
+                    tasks.remove(at: taskIndex)
+                    newTasks.remove(at: indexPath.row)
+                    
+                }
+            }
+            tasks = CoreDataHelper.retrieveTasks()
             self.tableview.reloadData()
             
         }
     }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let task = newTasks[indexPath.row]
+        let popOverVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "popup") as! PopUpViewController
+        popOverVC.taskTitle = task.title!
+        popOverVC.taskDescription = " Description: \(task.taskDescription!)"
+        popOverVC.taskDeadline = "Deadline: \((task.endDate?.toString(dateFormat: "MM-dd-yyyy"))!)"
+
+        self.addChildViewController(popOverVC)
+        popOverVC.view.frame = self.view.frame
+        self.view.addSubview(popOverVC.view)
+        popOverVC.didMove(toParentViewController: self)
+        tableView.deselectRow(at: indexPath, animated: true)
+
+
+
+        
+    
    
 
-
+    
+    }
 }

@@ -14,15 +14,20 @@ class PopUpViewController: UIViewController {
     var taskDeadline = ""
     
     @IBOutlet weak var taskName: UILabel!
-    
     @IBOutlet weak var deadline: UILabel!
     @IBOutlet var textview: UITextView!
+    
+    @IBOutlet weak var actualPopup: UIView!
         override func viewDidLoad() {
             super.viewDidLoad()
             taskName.text = taskTitle
             textview.text = taskDescription
             deadline.text = taskDeadline;
             self.view.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+            actualPopup.layer.cornerRadius = 10;
+            actualPopup.layer.masksToBounds = true;
+            actualPopup.center = self.view.center;
+
             
             self.showAnimate()
             
@@ -47,6 +52,8 @@ class PopUpViewController: UIViewController {
                 self.view.alpha = 1.0
                 self.view.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
             });
+            
+
         }
         
         func removeAnimate()

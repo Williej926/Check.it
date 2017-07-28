@@ -12,5 +12,5 @@ class TaskCell: UITableViewCell{
     
     @IBOutlet weak var taskName: UILabel!
     
-    @IBOutlet weak var button: UIButton!
+    @IBOutlet weak var dayLabel: UILabel!
 }

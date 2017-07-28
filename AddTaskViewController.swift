@@ -8,6 +8,9 @@
 
 import Foundation
 import UIKit
+import CoreData
+
+
 
 class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPickerViewDataSource, UITextViewDelegate{
     @IBOutlet weak var taskName: UILabel!
@@ -20,7 +23,8 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
     let array = ["taskname","taskdescription","deadline","priority","estimated"]
     var selectedDate = Date()
     
-    
+    let task : Task? = nil
+
 
     
     override func viewDidLoad() {
@@ -51,7 +55,6 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
         datePicker.minimumDate = calendar.startOfDay(for: calendar.date(from: components)!)
         
         datePicker.date = calendar.date(from: components)!
-        print(datePicker.date)
         deadlinePicker.text = datePicker.date.toString(dateFormat: "MM-dd-yyyy")
 
 
@@ -63,11 +66,16 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
         view.addGestureRecognizer(tap)
         textview.text = "Enter Text Here"
         textview.textColor = UIColor.lightGray
+        textview.clipsToBounds = true;
+        textview.layer.cornerRadius = 10.0
         
         
     }
     
     
+    @IBAction func cancel(_ sender: Any) {
+        self.performSegue(withIdentifier: "cancel", sender: UIButton())
+    }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
         if textView.textColor == UIColor.lightGray {
@@ -97,7 +105,6 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
         let components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
         selectedDate = calendar.startOfDay(for: calendar.date(from: components)!)
         
-        print(selectedDate)
         self.view.endEditing(true)
         
     }
@@ -140,67 +147,108 @@ class AddTaskViewController: UITableViewController,UIPickerViewDelegate, UIPicke
         cell?.contentView.backgroundColor = UIColor.white
     }
     
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let identifier = segue.identifier {
-            if identifier == "cancel" {
-                print("Cancel button tapped")
-            } else if identifier == "save" {
-                print("Save button tapped")
-                let time = timePicker.text!
-                print("checking input")
-                if (time != "" && (textview.text != "" && textview.text != "Enter Text Here" && textview.text != "Placeholder")){
-                    print("nil")
-                    let task = Task()
-                    
-                    task.title = taskTitle.text!
-                    task.endDate = selectedDate
-                    task.priority = PriorityPicker.text ?? ""
-                    task.timeNeeded = Int(timePicker.text!)!
-                    task.description = textview.text
-                    print(task.timeNeeded)
-                    let weeklyCalendarViewController = segue.destination as! WeeklyCalendarViewController
-                    weeklyCalendarViewController.tasks.append(task)
-                    
-                }
-                else{
-                    let alertController = UIAlertController(title: "no time selected", message: "please select a time", preferredStyle: UIAlertControllerStyle.alert)
-                    alertController.addAction(UIAlertAction(title: "dismiss", style: UIAlertActionStyle.default, handler: nil))
-                    self.present(alertController, animated: true, completion: nil)
-                    print("true")
-                    
+    @IBAction func save(_ sender: Any) {
+        let time = timePicker.text!
+
+        if (time == "" || (textview.text == "" || textview.text == "Enter Text Here" || textview.text == "Placeholder")){
+            let alertController = UIAlertController(title: "Please enter missing information", message: "", preferredStyle: UIAlertControllerStyle.alert)
+            alertController.addAction(UIAlertAction(title: "dismiss", style: UIAlertActionStyle.default, handler: nil))
+            self.present(alertController, animated: true, completion: nil)
+            
+            
+        }
+        else{
+        let time = timePicker.text!
+                let task = self.task ?? CoreDataHelper.newTask()
+            
+                task.title = taskTitle.text!
+                task.endDate = selectedDate as NSDate!
+                let endDate = task.endDate as Date!
+                switch PriorityPicker.text ?? ""{
+                    case "Low":
+                task.priority = 0
+                    case "Neutral":
+                task.priority = 1
+                    case "High":
+                task.priority = 2
+                    case "Urgent":
+                task.priority = 32                    default:
+                task.priority = 4
                 
-                }
+            }
+//
+                if Int32(timePicker.text!) != nil{
+                task.timeNeeded = Int32(timePicker.text!)!
+
+
+                task.taskDescription = textview.text ?? ""
+                    if(((endDate?.interval(ofComponent: .day, fromDate: Date()))!) == 0){
+                        task.timePerDay = task.timeNeeded/1
+                    }
+                    else{
+                        task.timePerDay = task.timeNeeded/Int32((endDate?.interval(ofComponent: .day, fromDate: Date()))!)
+                    }
                 
+                print(endDate?.interval(ofComponent: .day, fromDate: Date()))
                 
+                print(task.percentPerDay)
+                CoreDataHelper.saveTask()
+                self.performSegue(withIdentifier: "save", sender: UIButton())
+
 
                 
-                
+            }
+            else{
+                let alertController = UIAlertController(title: "Please enter a valid integer", message: "", preferredStyle: UIAlertControllerStyle.alert)
+                alertController.addAction(UIAlertAction(title: "dismiss", style: UIAlertActionStyle.default, handler: nil))
+                self.present(alertController, animated: true, completion: nil)
+            }
+        
+            
+            
+
+
+    }
+   
+    
+//    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+//        if let identifier = segue.identifier {
+//            if identifier == "cancel" {
+//            } else if identifier == "save" {
+//                print("Save button tapped")
+//                let time = timePicker.text!
+//                print("checking input")
+//                if (time != "" && (textview.text != "" && textview.text != "Enter Text Here" && textview.text != "Placeholder")){
+//                    print("nil")
+//                    let task = self.task ?? CoreDataHelper.newTask()
+//
+//                    task.title = taskTitle.text!
+//                    task.endDate = selectedDate as NSDate!
+//                    print(task.endDate!)
+//                    let endDate = task.endDate as Date!
+//                    task.priority = PriorityPicker.text ?? ""
+//                    task.timeNeeded = Int32(timePicker.text!)!
+//                    task.taskDescription = textview.text ?? ""
+//                    task.timePerDay = Int32(endDate!.days(from: Date()))
+//                    print(endDate!.days(from: Date()))
+//                    CoreDataHelper.saveTask()
+//                    let weeklyCalendarViewController = segue.destination as! WeeklyCalendarViewController
+//                    weeklyCalendarViewController.tasks.append(task)
+//                    
+//                }
+//                
+//
+//                
+        
                 //                for _ in 0...7{
                 
                 
             }
-        }
+        //}
         
-    }
+    //}
     
-    @IBAction func checkInput(_ sender: UIBarButtonItem) {
-        print("true")
-//        let time = timePicker.text!
-//        print("checking input")
-//        if time == "" {
-//            print("nil")
-//        }
-//        else{
-//            let alertController = UIAlertController(title: "no time selected", message: "please select a time", preferredStyle: UIAlertControllerStyle.alert)
-//            alertController.addAction(UIAlertAction(title: "dismiss", style: UIAlertActionStyle.default, handler: nil))
-//            self.present(alertController, animated: true, completion: nil)
-//            print("true")
-//            return
-//            
-
-            
-        }
+        
 
 }
 

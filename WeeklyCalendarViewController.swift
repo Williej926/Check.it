@@ -22,6 +22,8 @@ class WeeklyCalendarViewController : UITableViewController{
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        tasks = CoreDataHelper.retrieveTasks()
+
         
         for num in 0...7 {
             let day = Calendar.current.date(byAdding: .day, value: num, to: Date())!
@@ -50,15 +52,21 @@ class WeeklyCalendarViewController : UITableViewController{
         
         let row = indexPath.row
         cell.tag = row
-        var sum = 0;
+        var sum : Int32 = 0;
         cell.day.text = dates[row].getDayOfWeek()
+        if(indexPath.row == 0){
+            cell.day.text = "Today"
+        }
+        if(indexPath.row == 1){
+            cell.day.text = "Tomorrow"
+        }
         
         for task in tasks   {
-            if dates[row].ifDateFeasible(startDate: Date(), endDate: task.endDate!) {
+            if dates[row].ifDateFeasible(startDate: Date(), endDate: task.endDate! as Date) {
+            
                 cell.feasibleTasks.append(task)
                 cell.taskName.text = "You have \(cell.feasibleTasks.count) tasks today."
-                sum+=task.timeNeeded
-                
+                sum += task.timePerDay
                 cell.actualTasks.append(task)
                 
             }
@@ -66,7 +74,7 @@ class WeeklyCalendarViewController : UITableViewController{
                 cell.taskName.text = cell.taskName.text
             }
             if(sum > 0){
-                cell.taskTime.text = "You have \(sum) hours of work"
+                cell.taskTime.text = "You have \(sum) hours of work today"
             }
             
         }
@@ -74,8 +82,7 @@ class WeeklyCalendarViewController : UITableViewController{
             cell.taskName.text = "You don't have any tasks today."
             cell.taskTime.text = ""
         }
-        //cell.taskTime.text = String (sum)
-            
+        
         cell.feasibleTasks.removeAll()  
 
 //        if(tasks.count != 0){
@@ -92,7 +99,8 @@ class WeeklyCalendarViewController : UITableViewController{
    
     @IBAction func unwindToWeeklyCalendarViewController(_ segue: UIStoryboardSegue) {
         
-        
+        self.tasks = CoreDataHelper.retrieveTasks()
+
         
     }
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -102,16 +110,15 @@ class WeeklyCalendarViewController : UITableViewController{
 
             let editDayViewController = segue.destination as! DayInfoViewController
             editDayViewController.day = day.getDayOfWeek()
+           
             editDayViewController.delegate = self
             let taskcell = tableView(tableview, cellForRowAt: indexPath) as! Cell
             for index in 0..<taskcell.actualTasks.count{
                 editDayViewController.tasks.append(taskcell.actualTasks[index])
-                print(taskcell.actualTasks.count)
 
             }
             taskcell.actualTasks.removeAll()
 
-            print(day.getDayOfWeek())
 
 
         }
@@ -123,8 +130,6 @@ class WeeklyCalendarViewController : UITableViewController{
 extension WeeklyCalendarViewController: DayInfoViewControllerDelegate {
     func didDeleteTask(task: Task) {
         tasks = tasks.filter() { $0 !== task }
-        print(true)
-        print(tasks.count)
         tableview.reloadData()
     }
 }

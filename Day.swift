@@ -32,7 +32,6 @@ class Day {
         let end = endDate + 86400
         let start = startDate - 86400
         if date! >= start && date! <= end {
-            print(end)
             return true
         }
         else {
