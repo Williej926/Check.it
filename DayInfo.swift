@@ -21,7 +21,8 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
 
     var delegate: DayInfoViewControllerDelegate?
     
-
+    
+    @IBOutlet weak var gradientView: GradientView!
 
 
     @IBOutlet weak var tableview: UITableView!
@@ -29,13 +30,22 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
         newTasks.sort(by:{$0.priority > $1.priority })
 
         let cell = tableView.dequeueReusableCell(withIdentifier: "task", for: indexPath) as! TaskCell
-        if(Int(indexPath.row) < tasks.count){
-            cell.taskName.text = newTasks[indexPath.row].title
-            cell.dayLabel.text = "Deadline: \(newTasks[indexPath.row].endDate!.toString(dateFormat: "MM-dd-yyyy"))"
+        if((newTasks[indexPath.row].title) != nil){
+            if(Int(indexPath.row) < tasks.count){
+                cell.taskName.text = newTasks[indexPath.row].title
+                let date = newTasks[indexPath.row].endDate as! Date
+                if(date.interval(ofComponent: .day, fromDate: Date()) == 0){
+                    cell.dayLabel.text = "Task due today"
+                }
+                else{
+                    cell.dayLabel.text = "Task due in \(date.interval(ofComponent: .day, fromDate: Date())) days"
+                }
+                
+            }
+           
             
-            
-
         }
+        
         print(newTasks)
 
         
@@ -45,7 +55,7 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
 
-        return tasks.count
+        return newTasks.count
         
     }
     
@@ -57,6 +67,7 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
 
 
     @IBOutlet weak var DayName: UILabel!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         DayName.text = day
@@ -66,7 +77,12 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
         //navigationItem.setHidesBackButton(true, animated: true)
         
         newTasks = tasks
+        print(tasks.count)
+        print(newTasks.count)
+        gradientView.addSubview(DayName)
         
+        gradientView.mask = DayName
+        gradientView.backgroundColor = UIColor.white
 
 
         
@@ -88,6 +104,22 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
         popOverVC.taskTitle = task.title!
         popOverVC.taskDescription = task.taskDescription!
         popOverVC.taskDeadline = String(describing: task.endDate!)
+        var newPriority: String = ""
+        switch task.priority{
+        case 0:
+            newPriority = "Low"
+        case 1:
+            newPriority = "Neutral"
+        case 2:
+            newPriority = "High"
+        case 3:
+            newPriority = "Urgent"
+        default:
+            newPriority = "Neutral"
+            
+        }
+        popOverVC.priorityText = newPriority
+        print(newPriority)
         
         
         self.addChildViewController(popOverVC)
@@ -101,7 +133,6 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
-        delegate?.didDeleteTask(task: newTasks[indexPath.row])
         
         if editingStyle == .delete {
 //            CoreDataHelper.delete(task: tasks[indexPath.row])
@@ -116,13 +147,21 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
 //                }
 //            }
 ////            tasks.remove(at: indexPath.row)
-            for taskIndex in 0..<tasks.count{
+            //for taskIndex in 0...tasks.count - 1{
+            var taskIndex = 0
+            while taskIndex < tasks.count {
+                
                 if newTasks[indexPath.row] == tasks[taskIndex] {
+                    delegate?.didDeleteTask(task: tasks[taskIndex])
+
                     CoreDataHelper.delete(task: tasks[taskIndex])
+
                     tasks.remove(at: taskIndex)
-                    newTasks.remove(at: indexPath.row)
+                   newTasks.remove(at: indexPath.row)
                     
                 }
+
+                taskIndex += 1
             }
             tasks = CoreDataHelper.retrieveTasks()
             self.tableview.reloadData()
@@ -135,6 +174,19 @@ class DayInfoViewController: UIViewController, UITableViewDelegate, UITableViewD
         popOverVC.taskTitle = task.title!
         popOverVC.taskDescription = " Description: \(task.taskDescription!)"
         popOverVC.taskDeadline = "Deadline: \((task.endDate?.toString(dateFormat: "MM-dd-yyyy"))!)"
+        switch task.priority{
+        case 0:
+            popOverVC.priorityText = "Low"
+        case 1:
+            popOverVC.priorityText = "Neutral"
+        case 2:
+            popOverVC.priorityText = "High"
+        case 3:
+            popOverVC.priorityText = "Urgent"
+        default:
+            popOverVC.priorityText = "Neutral"
+            
+        }
 
         self.addChildViewController(popOverVC)
         popOverVC.view.frame = self.view.frame

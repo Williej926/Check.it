@@ -19,12 +19,25 @@ class WeeklyCalendarViewController : UITableViewController{
     @IBOutlet var tableview: UITableView!
     var array = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
     var dates: [Day] = []
+    var gl:CAGradientLayer!
+
+    @IBOutlet weak var navBar: UINavigationItem!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         tasks = CoreDataHelper.retrieveTasks()
 
+
+        tableview.backgroundView = nil;
+        tableview.backgroundView = UIView()
+
+        let colorTop = UIColor(red: 192.0 / 255.0, green: 38.0 / 255.0, blue: 42.0 / 255.0, alpha: 1.0).cgColor
+        let colorBottom = UIColor(red: 35.0 / 255.0, green: 2.0 / 255.0, blue: 2.0 / 255.0, alpha: 1.0).cgColor
         
+        self.gl = CAGradientLayer()
+        self.gl.colors = [colorTop, colorBottom]
+        
+        self.gl.locations = [0.0, 1.0]
         for num in 0...7 {
             let day = Calendar.current.date(byAdding: .day, value: num, to: Date())!
             let date = Day(date: day)
@@ -32,20 +45,28 @@ class WeeklyCalendarViewController : UITableViewController{
             print(date.getDayOfWeek())
             
         }
+        gradientView.addSubview(navBarTitle)
+        gradientView.mask = navBarTitle
+        gradientView.backgroundColor = UIColor.white
+        
 
+        
+        
 
-    }
+     }
 
+    @IBOutlet weak var navBarTitle: UILabel!
+    @IBOutlet weak var gradientView: UIView!
     @IBOutlet weak var taskHours: UILabel!
+    
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return dates.count;
         
         
     }
     
-    override func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
+
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! Cell
@@ -54,20 +75,30 @@ class WeeklyCalendarViewController : UITableViewController{
         cell.tag = row
         var sum : Int32 = 0;
         cell.day.text = dates[row].getDayOfWeek()
+        cell.date.text = dates[row].format()
         if(indexPath.row == 0){
             cell.day.text = "Today"
         }
         if(indexPath.row == 1){
             cell.day.text = "Tomorrow"
         }
+        var amount = 0
+
         
         for task in tasks   {
             if dates[row].ifDateFeasible(startDate: Date(), endDate: task.endDate! as Date) {
-            
                 cell.feasibleTasks.append(task)
-                cell.taskName.text = "You have \(cell.feasibleTasks.count) tasks today."
+                if(cell.feasibleTasks.count == 1){
+                    cell.taskName.text = "You have one task today"
+                }
+                else{
+                    cell.taskName.text = "You have \(cell.feasibleTasks.count) tasks today."
+                }
                 sum += task.timePerDay
                 cell.actualTasks.append(task)
+
+
+        
                 
             }
             else{
@@ -76,14 +107,26 @@ class WeeklyCalendarViewController : UITableViewController{
             if(sum > 0){
                 cell.taskTime.text = "You have \(sum) hours of work today"
             }
-            
+            var dateComponents  = DateComponents()
+            dateComponents.day = row
+            let offset = Calendar.current.date(byAdding: dateComponents , to: Date())
+            if task.endDate?.toString(dateFormat: "MM-dd-yyyy") == offset?.toString(dateFormat: "MM-dd-yyyy"){
+                amount += 1
+                cell.taskTime.text = "You have \(amount) tasks due \(cell.day.text!)"
+            }
         }
-        if(tasks.count == 0){
+        
+        if cell.feasibleTasks.count == 0 {
             cell.taskName.text = "You don't have any tasks today."
             cell.taskTime.text = ""
         }
-        
-        cell.feasibleTasks.removeAll()  
+//        if(tasks.count == 0){
+//            cell.taskName.text = "You don't have any tasks today."
+//            cell.taskTime.text = ""
+//        }
+
+    
+
 
 //        if(tasks.count != 0){
 //            let task = tasks[0]
@@ -91,7 +134,8 @@ class WeeklyCalendarViewController : UITableViewController{
 //        }
     
         
-        
+        cell.feasibleTasks.removeAll()
+
         
         
         return cell
@@ -113,9 +157,10 @@ class WeeklyCalendarViewController : UITableViewController{
            
             editDayViewController.delegate = self
             let taskcell = tableView(tableview, cellForRowAt: indexPath) as! Cell
+            
             for index in 0..<taskcell.actualTasks.count{
                 editDayViewController.tasks.append(taskcell.actualTasks[index])
-
+                
             }
             taskcell.actualTasks.removeAll()
 
@@ -129,7 +174,7 @@ class WeeklyCalendarViewController : UITableViewController{
 
 extension WeeklyCalendarViewController: DayInfoViewControllerDelegate {
     func didDeleteTask(task: Task) {
-        tasks = tasks.filter() { $0 !== task }
+        tasks = tasks.filter { $0 != task }
         tableview.reloadData()
     }
 }

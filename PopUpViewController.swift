@@ -12,7 +12,9 @@ class PopUpViewController: UIViewController {
     var taskTitle = ""
     var taskDescription = ""
     var taskDeadline = ""
+    var priorityText = ""
     
+    @IBOutlet weak var priority: UILabel!
     @IBOutlet weak var taskName: UILabel!
     @IBOutlet weak var deadline: UILabel!
     @IBOutlet var textview: UITextView!
@@ -23,10 +25,15 @@ class PopUpViewController: UIViewController {
             taskName.text = taskTitle
             textview.text = taskDescription
             deadline.text = taskDeadline;
+            priority.text = "Priority: \(priorityText)"
+            print(priority.text)
             self.view.backgroundColor = UIColor.black.withAlphaComponent(0.8)
             actualPopup.layer.cornerRadius = 10;
             actualPopup.layer.masksToBounds = true;
             actualPopup.center = self.view.center;
+            if(taskDeadline == Date().toString(dateFormat: "MM-dd-yyyy")){
+                deadline.text = "Today"
+            }
 
             
             self.showAnimate()
@@ -69,7 +76,17 @@ class PopUpViewController: UIViewController {
             });
         }
         
-    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let firstTouch = touches.first {
+            let hitView = self.view.hitTest(firstTouch.location(in: self.view), with: event)
+            
+            if hitView === actualPopup {
+                print("touch is inside")
+            } else {
+                removeAnimate()
+            }
+        }
+    }
     
 
 }
