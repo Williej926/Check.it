@@ -38,8 +38,14 @@ extension NSDate{
         dateFormatter.dateFormat = format
         return dateFormatter.string(from: self as Date)
     }
+    var startOfDay: NSDate {
+        return NSCalendar.current.startOfDay(for: self as Date) as NSDate
+    }
+    
+   
     
 }
+
 extension String{
     func isStringAnInt(string: String) -> Bool {
         return Int(string) == nil

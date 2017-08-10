@@ -24,7 +24,8 @@ class AddTaskVC: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, 
     var selectedDate = Date()
     
     let task : Task? = nil
-    
+    override func viewDidAppear(_ animated: Bool) {
+    }
     
     
     override func viewDidLoad() {
@@ -38,7 +39,7 @@ class AddTaskVC: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, 
         
         PriorityPicker.inputView = pickerView
         let datePicker = UIDatePicker(frame: CGRect.zero)
-        datePicker.datePickerMode = .date
+//        datePicker.datePickerMode = .date
         datePicker.addTarget(self, action: #selector(self.onDatePickerValueChanged), for: .valueChanged)
         //let components = Calendar.dateComponents([.year, .month, .day, .hour], from: Date)
         
@@ -54,21 +55,21 @@ class AddTaskVC: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, 
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
         datePicker.minimumDate = calendar.startOfDay(for: calendar.date(from: components)!)
-        
+        datePicker.datePickerMode = .date
         datePicker.date = calendar.date(from: components)!
         deadlinePicker.text = datePicker.date.toString(dateFormat: "MM-dd-yyyy")
         
         
-        
-        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: "dismissKeyboard")
         textview.delegate = self;
         
         
-        view.addGestureRecognizer(tap)
         textview.text = "Enter Task Description Here"
         textview.textColor = UIColor.lightGray
         textview.clipsToBounds = true;
         textview.layer.cornerRadius = 10.0
+   
+               textview.delegate = self;
+
         
     }
     override func viewWillDisappear(_ animated: Bool) {
@@ -109,7 +110,7 @@ class AddTaskVC: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, 
         let date = dateFormatter.date(from:isoDate!)!
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month, .day, .hour], from: date)
-        selectedDate = calendar.startOfDay(for: calendar.date(from: components)!)
+        selectedDate = date
         
         self.view.endEditing(true)
         
@@ -181,27 +182,56 @@ class AddTaskVC: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, 
             default:
                 task.priority = 4
                 
+                
             }
-            //
+            task.isChecked = [Bool]()
+            
+            for index in 0...endDate!.interval(ofComponent: .day, fromDate: Date()) + 1{
+                print("checking task")
+                task.isChecked!.append(false)
+            }
+            print(task.isChecked)
+
             if Int32(timePicker.text!) != nil{
                 task.timeNeeded = Int32(timePicker.text!)!
-                
-                
                 task.taskDescription = textview.text ?? ""
+                
+
                 if(((endDate?.interval(ofComponent: .day, fromDate: Date()))!) == 0){
                     task.timePerDay = task.timeNeeded/1
                 }
                 else{
                     task.timePerDay = task.timeNeeded/Int32((endDate?.interval(ofComponent: .day, fromDate: Date()))!)
                 }
+                if(deadlinePicker.text == endDate?.toString(dateFormat: "MM-dddd-yyyy")){
+                    var date = Date() as NSDate
+                    task.endDate = date.startOfDay
+                        
+                }
+                if task.timePerDay > 8 {
+                    print(true)
+                    let alertController = UIAlertController(title: "Your task makes you work more than 8 hours a day", message: "Do you want to continue?", preferredStyle: UIAlertControllerStyle.alert)
+                    let cancel = UIAlertAction(title: "Cancel", style: .destructive, handler: { (action) -> Void in
+                        
+                        
+                    })
+                    let submitAction = UIAlertAction(title: "Submit", style: .default, handler: { (action) -> Void in
+                        CoreDataHelper.saveTask()
+                        self.performSegue(withIdentifier: "save", sender: UIButton())
+
+                    })
+                    alertController.addAction(cancel)
+                    alertController.addAction(submitAction)
+                    
+                    
+                    present(alertController, animated: true, completion: nil)
+                    return
+                }
                 
-                print(endDate?.interval(ofComponent: .day, fromDate: Date()))
-                
-                print(task.percentPerDay)
                 CoreDataHelper.saveTask()
+                print("Task saved")
                 self.performSegue(withIdentifier: "save", sender: UIButton())
-                
-                
+
                 
                 
             }
@@ -217,9 +247,14 @@ class AddTaskVC: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, 
             
         }
         
-        
-        //    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+            func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+                if segue.identifier == "save"{
+                    let weeklyCalender = segue.destination as! WeeklyCalendarViewController
+                    weeklyCalender.tableView.reloadData() 
+                }
+        }
         //        if let identifier = segue.identifier {
+                
         //            if identifier == "cancel" {
         //            } else if identifier == "save" {
         //                print("Save button tapped")
@@ -261,6 +296,8 @@ class AddTaskVC: UIViewController,UIPickerViewDelegate, UIPickerViewDataSource, 
         return newLength <= 9 // Bool
     }
     
+   
+   
 }
 
 

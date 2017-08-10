@@ -1,3 +1,4 @@
+
 //
 //  WeeklyCalendarViewController.swift
 //  TheRealFindMe
@@ -24,6 +25,10 @@ class WeeklyCalendarViewController : UITableViewController{
     @IBOutlet weak var navBar: UINavigationItem!
     
     override func viewDidLoad() {
+        var bounds = UIScreen.main.bounds
+        var width = bounds.size.width
+        var height = bounds.size.height
+
         super.viewDidLoad()
         tasks = CoreDataHelper.retrieveTasks()
 
@@ -48,6 +53,7 @@ class WeeklyCalendarViewController : UITableViewController{
         gradientView.addSubview(navBarTitle)
         gradientView.mask = navBarTitle
         gradientView.backgroundColor = UIColor.white
+        tableview.rowHeight = height / 9
         
 
         
@@ -88,13 +94,23 @@ class WeeklyCalendarViewController : UITableViewController{
         for task in tasks   {
             if dates[row].ifDateFeasible(startDate: Date(), endDate: task.endDate! as Date) {
                 cell.feasibleTasks.append(task)
-                if(cell.feasibleTasks.count == 1){
+                var count = 0;
+                for index in 0..<cell.feasibleTasks.count{
+                    if(cell.feasibleTasks[index].isChecked?[indexPath.row] == true){
+                        count+=1
+                    }
+                    else{
+                        sum += task.timePerDay
+
+                    }
+                }
+                if(cell.feasibleTasks.count - count == 1){
                     cell.taskName.text = "You have one task today"
                 }
                 else{
-                    cell.taskName.text = "You have \(cell.feasibleTasks.count) tasks today."
+                    cell.taskName.text = "You have \(cell.feasibleTasks.count - count) tasks today."
                 }
-                sum += task.timePerDay
+                
                 cell.actualTasks.append(task)
 
 
@@ -112,7 +128,13 @@ class WeeklyCalendarViewController : UITableViewController{
             let offset = Calendar.current.date(byAdding: dateComponents , to: Date())
             if task.endDate?.toString(dateFormat: "MM-dd-yyyy") == offset?.toString(dateFormat: "MM-dd-yyyy"){
                 amount += 1
-                cell.taskTime.text = "You have \(amount) tasks due \(cell.day.text!)"
+                if(amount < 0){
+                    cell.taskTime.text = "You don't have any tasks today."
+                    CoreDataHelper.delete(task: task)
+                }
+                else{
+                    cell.taskTime.text = "You have \(amount) tasks due \(cell.day.text!)"
+                }
             }
         }
         
@@ -162,6 +184,7 @@ class WeeklyCalendarViewController : UITableViewController{
                 editDayViewController.tasks.append(taskcell.actualTasks[index])
                 
             }
+            editDayViewController.dayIndex = indexPath.row
             taskcell.actualTasks.removeAll()
 
 
@@ -175,6 +198,10 @@ class WeeklyCalendarViewController : UITableViewController{
 extension WeeklyCalendarViewController: DayInfoViewControllerDelegate {
     func didDeleteTask(task: Task) {
         tasks = tasks.filter { $0 != task }
+        tableview.reloadData()
+    }
+    func didCheckTask(checked: Bool, index: Int, dayIndex: Int){
+        tasks[index].isChecked?[dayIndex] = checked
         tableview.reloadData()
     }
 }
